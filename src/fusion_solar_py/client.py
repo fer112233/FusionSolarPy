@@ -331,6 +331,42 @@ class FusionSolarClient:
         # return the plant data
         return plant_data["data"]
 
+    @logged_in
+    def get_history_stats(
+            self, device_id: str, query_date: date = date.today(), signal_ids: [int] = []
+    ) -> dict:
+        """Retrieves the device statistics for a specified day.
+
+        :param device_id: The device's id.
+        :type device_id: str
+        :param query_date: The date for which the data should be fetched. If not set, retrieves the data for the current day.
+        :type query_date: datetime.date
+        :param signal_ids: A list of signal IDs to query.
+        :type signal_ids: List[int]
+        :return: A dictionary containing the device statistics for the specified day.
+        :rtype: dict
+        """
+
+        r = self._session.get(
+            url=f"https://{self._huawei_subdomain}.fusionsolar.huawei.com/rest/pvms/web/device/v1/device-history-data",
+            params={
+                "signalIds": signal_ids,
+                "deviceDn": device_id,
+                "date": self._get_day_start_sec(query_date),
+                "_": round(time.time() * 1000),
+            },
+        )
+        r.raise_for_status()
+        historic_data = r.json()
+
+        if not historic_data["success"] or not "data" in historic_data:
+            raise FusionSolarException(
+                f"Failed to retrieve historic data for {device_id}"
+            )
+
+        # return the plant data
+        return historic_data["data"]
+
     def get_last_plant_data(self, plant_data: dict) -> dict:
         """Extracts the last measurements from the plant data
         The dict contains detailed information about the data of the plant.
