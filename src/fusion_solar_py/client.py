@@ -3,7 +3,8 @@
 import logging
 import requests
 import time
-from datetime import datetime
+import calendar
+from datetime import datetime, date
 from functools import wraps
 import json
 
@@ -400,15 +401,22 @@ class FusionSolarClient:
         # If nothing is found return "None" for the current time
         return {"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "value": None}
 
-    def _get_day_start_sec(self) -> int:
-        """Return the start of the current day in seconds since
-           epoche.
+    def _get_day_start_sec(self, requested_date: date = date.today()) -> int:
+        """Return the start of the day in seconds since epoch for a given date in UTC timezone.
 
-        :return: The start of the day ("00:00:00") in seconds
+        This function takes a datetime.date object as input and returns the Unix time in seconds
+        corresponding to the start of the day (00:00:00) in the UTC timezone. The result is
+        returned as an integer.
+
+        :param requested_date: The date to get the start of the day for, default is the current date.
+        :type requested_date: datetime.date
+        :return: The start of the day ("00:00:00") in seconds since epoch in UTC timezone.
         :rtype: int
         """
-        start_today = time.strftime("%Y-%m-%d 00:00:00", time.gmtime())
-        struct_time = time.strptime(start_today, "%Y-%m-%d %H:%M:%S")
-        seconds = round(time.mktime(struct_time) * 1000)
+        # Create a datetime object with the given date and time set to 00:00:00 (start of the day)
+        dt = datetime(requested_date.year, requested_date.month, requested_date.day, 0, 0, 0)
 
-        return seconds
+        # Convert the datetime object to Unix time (in seconds) considering UTC timezone
+        unix_time = int(calendar.timegm(dt.utctimetuple())) * 1000
+        return unix_time
+
